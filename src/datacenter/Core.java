@@ -222,7 +222,7 @@ public final class Core implements Powerable, Serializable {
         } else {
             double alpha = .9;
             double slowdown = (1 - alpha) + alpha / this.speed;
-            double finishTime = time + this.job.getSize() / slowdown;
+            double finishTime = time + this.job.getSize() * slowdown; //used to be divide?
             Server server = this.socket.getServer();
             JobFinishEvent finishEvent = new JobFinishEvent(finishTime,
                     experiment, aJob, server, time, this.speed);
@@ -377,8 +377,8 @@ public final class Core implements Powerable, Serializable {
                                         + workCompleted);
             double slowdown = (1 - alpha) + alpha / theSpeed;
             double finishTime = time
-                    + (theJob.getSize() - theJob.getAmountCompleted())
-                        / slowdown;
+		+ (theJob.getSize() - theJob.getAmountCompleted())
+		* slowdown; // Originally divide?? Incorrect??
 
             JobFinishEvent newFinishEvent = new JobFinishEvent(finishTime,
                     this.experiment, finishEvent.getJob(),
@@ -520,6 +520,15 @@ public final class Core implements Powerable, Serializable {
         } else {
             return 0.0d;
         }
+    }
+
+    /**
+     * Gets the max dynamic power component of the core (in watts).
+     *
+     * @return the max dynamic power component of the core (in watts).
+     */
+    public double getMaxDynamicPower() {
+            return this.dynamicPower - this.idlePower;
     }
 
     /**

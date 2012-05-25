@@ -97,7 +97,7 @@ public class KnightShiftServer extends Server {
     /** Whether the KnightShift server is transitioning to knight. */
     private boolean transitioningToKnight;
 
-
+    private int numberOfTransitions;
     /**
      * Creates a new KnightShiftServer.
      *
@@ -130,6 +130,7 @@ public class KnightShiftServer extends Server {
         this.transitioningToActive = false;
         this.transitioningToKnight = false;
 	this.knightCapability = theKnightCapability;
+	this.numberOfTransitions = 0;
         this.pauseProcessing(0);
     }
 
@@ -156,13 +157,13 @@ public class KnightShiftServer extends Server {
     public void insertJob(final double time, final Job job) {
 	
 
-	if(this.knightshiftState == KnightShiftState.ACTIVE || this.knightshiftState ==KnightShiftState.TRANSITIONING_TO_ACTIVE || super.getInstantUtilization()+1/super.sockets.size() <= this.knightCapability) {
+	if(this.knightshiftState == KnightShiftState.ACTIVE || this.knightshiftState ==KnightShiftState.TRANSITIONING_TO_ACTIVE || super.getInstantUtilization()+1/super.sockets.size() <= this.knightCapability*.8) {
 	    // if active and high utilization, insertjob
 	    // or if already in knight and low utilization, insertjob
 
 	    super.insertJob(time, job);
 
-	} else if ((this.transitioningToKnight || this.knightshiftState == KnightShiftState.KNIGHT) && (super.getInstantUtilization()+1/super.sockets.size()) > this.knightCapability) {
+	} else if ((this.transitioningToKnight || this.knightshiftState == KnightShiftState.KNIGHT) && (super.getInstantUtilization()+1/super.sockets.size()) > this.knightCapability*.8) {
 	    // else if knight and high, wakeup primary, insertjob.
 	    //System.out.println("Here");
 	    this.transistionToActive(time);
@@ -174,38 +175,6 @@ public class KnightShiftServer extends Server {
 
 	}
 
-
-        // if (this.knightshiftState == KnightShiftState.ACTIVE) {
-
-        //     super.insertJob(time, job);
-
-        // } else if (this.knightshiftState == KnightShiftState.TRANSITIONING_TO_KNIGHT) {
-
-        //     this.transistionToActive(time);
-        //     this.queue.add(job);
-
-        //     // Job has entered the system
-        //     this.jobsInServerInvariant++;
-
-        // } else if (this.knightshiftState
-        //             == KnightShiftState.TRANSITIONING_TO_ACTIVE) {
-
-        //     this.queue.add(job);
-        //     // Job has entered the system
-        //     this.jobsInServerInvariant++;
-
-        // } else if (this.knightshiftState == KnightShiftState.KNIGHT) {
-
-        //     this.transistionToActive(time);
-        //     this.queue.add(job);
-        //     // Job has entered the system
-        //     this.jobsInServerInvariant++;
-
-        // } else {
-
-        //     Sim.fatalError("Uknown power state");
-
-        // }
     }
 
     /**
@@ -278,6 +247,8 @@ public class KnightShiftServer extends Server {
 	super.disableSockets(time,(int)(super.sockets.size()*knightCapability));
 	//System.out.println("To Knight");
 	super.setDvfsSpeed(time,knightSpeed);
+	numberOfTransitions++;
+	//System.out.println(numberOfTransitions);
         //this.pauseProcessing(time);
     }
 
@@ -294,7 +265,7 @@ public class KnightShiftServer extends Server {
         super.removeJob(time, job);
 
 	// Check utilization, if utilization is low, then transition to Knight
-	if (super.getInstantUtilization() < this.knightCapability && this.knightshiftState == KnightShiftState.ACTIVE) {
+	if (super.getInstantUtilization() < this.knightCapability && this.knightshiftState == KnightShiftState.ACTIVE) {	    
 	    this.transistionToKnight(time);
 	}
 
@@ -318,6 +289,8 @@ public class KnightShiftServer extends Server {
 	super.enableSockets(time);
 	//System.out.println("To Main");
 	super.setDvfsSpeed(time,1.0);
+	numberOfTransitions++;
+	//System.out.println(numberOfTransitions);
         //this.resumeProcessing(time);
     }
 
@@ -337,6 +310,10 @@ public class KnightShiftServer extends Server {
      */
     public boolean isTransitioningToKnight() {
         return transitioningToKnight;
+    }
+
+    public int getNumberOfTransitions(){
+	return numberOfTransitions;
     }
 
     /**

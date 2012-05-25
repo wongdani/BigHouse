@@ -566,4 +566,25 @@ public final class Socket implements Powerable, Serializable {
         return dynamicPower;
     }
 
+    /**
+     * Get the max dynamic power consumption of the socket.
+     * Modeled as the sum of the core dynamic power.
+     * Uncore power is all leakage.
+     *
+     * @return the max dynamic power consumption of the socket
+     */
+    public double getMaxDynamicPower() {
+
+        double dynamicPower = 0.0d;
+
+        Iterator<Core> coreIter = this.getCores().iterator();
+        while (coreIter.hasNext()) {
+            Core core = coreIter.next();
+            double corePower = core.getMaxDynamicPower();
+            dynamicPower += corePower;
+        }
+
+        return dynamicPower;
+    }
+
 }

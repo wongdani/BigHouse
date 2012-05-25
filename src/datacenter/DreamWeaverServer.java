@@ -33,6 +33,7 @@ package datacenter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.ArrayList;
 
 import generator.Generator;
 import core.Experiment;
@@ -200,8 +201,8 @@ public class DreamWeaverServer extends PowerNapServer {
      *            - the time the job is canceled
      */
     public void cancelTimeoutEvent(final double time) {
-        for (int i = 0; i < sockets.length; i++) {
-            Socket socket = sockets[i];
+        for (int i = 0; i < sockets.size(); i++) {
+            Socket socket = sockets.get(i);
             Vector<Core> cores = socket.getCores();
             Iterator<Core> iter = cores.iterator();
             while (iter.hasNext()) {
@@ -240,9 +241,9 @@ public class DreamWeaverServer extends PowerNapServer {
     public void transistionToNap(final double time) {
         super.transistionToNap(time);
         // Make sure to schedule timeouts for jobs
-        Socket[] sockets = this.getSockets();
-        for (int i = 0; i < sockets.length; i++) {
-            Socket socket = sockets[i];
+        ArrayList<Socket> sockets = this.getSockets();
+        for (int i = 0; i < sockets.size(); i++) {
+            Socket socket = sockets.get(i);
             Vector<Core> cores = socket.getCores();
             Iterator<Core> iter = cores.iterator();
             while (iter.hasNext()) {

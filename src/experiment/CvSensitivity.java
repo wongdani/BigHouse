@@ -42,6 +42,7 @@ import core.Experiment;
 import core.ExperimentInput;
 import core.ExperimentOutput;
 import core.Constants.StatName;
+import core.Constants.TimeWeightedStatName;
 import datacenter.DataCenter;
 import datacenter.PowerCappingEnforcer;
 import datacenter.Server;
@@ -117,7 +118,7 @@ public class CvSensitivity {
 		experimentOutput.addOutput(StatName.SOJOURN_TIME, .05, .95, .05, 5000);
 			System.out.println("Adding capping!");
 			experimentOutput.addOutput(StatName.TOTAL_CAPPING, .05, .95, .05, 5000);
-		//		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .01, .5, .01, 50000, .001);
+			//experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .01, .5, .01, 50000, .001);
 		Experiment experiment = new Experiment("Power capping test", rand, experimentInput, experimentOutput);
 
 		DataCenter dataCenter = new DataCenter();
@@ -162,6 +163,10 @@ public class CvSensitivity {
 		experiment.getStats().getStat(StatName.TOTAL_CAPPING).printStatInfo();
 		experiment.getStats().printAllStatInfo();
 //		System.out.println("Average Server Cap : " + averageServerLevelCap);
+		double averagePower = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_POWER).getAverage();
+		System.out.println("Average Power: " + averagePower);
+
+
 
 	}//End run()
 

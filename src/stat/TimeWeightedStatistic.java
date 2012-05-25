@@ -61,6 +61,7 @@ public class TimeWeightedStatistic extends Statistic {
 
     private boolean oldValueSet;
 
+    private double windowAverage;
     /** Used for sanity checking. */
     private double accumWeight;
 
@@ -85,7 +86,7 @@ public class TimeWeightedStatistic extends Statistic {
                                  final double quantile,
                                  final double quantilePrecision,
                                  final double theWindowSize) {
-        super(statsCollection,
+	super(statsCollection,
                 null,
                 nWarmupSamples,
                 meanPrecision,
@@ -99,6 +100,7 @@ public class TimeWeightedStatistic extends Statistic {
         this.accumWeight = 0.0d;
         this.oldValue = 0.0d;
         this.oldValueSet = false;
+	this.windowAverage = 0.0d;
     }
 
     /**
@@ -139,11 +141,14 @@ public class TimeWeightedStatistic extends Statistic {
             if (Math.abs(weight) < 1e-8) {
                 weight = 0;
             }
-            this.accumWeight += weight;
             double firstWindowPart = weight * value;
-            averageAccum += firstWindowPart;
+            this.averageAccum += firstWindowPart;
+            this.accumWeight += weight;
 
-            double overallAverage = averageAccum / this.windowSize;
+	    this.windowAverage += firstWindowPart; //window complete
+
+            double overallAverage = this.windowAverage / this.windowSize;
+	    //double overallAverage = this.averageAccum / this.accumWeight;
 
             if (overallAverage < 0) {
                 System.out.println("average_accum " + averageAccum
@@ -154,31 +159,39 @@ public class TimeWeightedStatistic extends Statistic {
                         + ", time " + time);
                 Sim.fatalError("overallAverage is < 0: " + overallAverage);
             }
-            super.addSample(overallAverage);
+            super.addSample(overallAverage); 
 
-            double remainder = currentPeriodLength - this.windowSize;
+	    double remainder = currentPeriodLength - this.windowSize;
 
             // A window that is just one value
             int wholePeriods = (int) Math.floor(remainder / this.windowSize);
 
             for (int i = 0; i < wholePeriods; i++) {
-                super.addSample(value);
+                super.addSample(newValue); //raw energy value??
+		this.accumWeight += this.windowSize; //weight is window size
+		this.averageAccum += this.windowSize*newValue;
             }
 
             // A new window with just a portion filled
+	    this.windowAverage = 0.0;
             remainder = remainder - this.windowSize * (wholePeriods);
-            this.averageAccum = remainder * value;
-            this.accumWeight = remainder;
-
+            this.averageAccum += remainder * newValue;
+            this.accumWeight += remainder;
+	    this.windowAverage += remainder * newValue;
             this.sampleWindowStart = this.windowSize * (wholePeriods + 1)
                     + this.sampleWindowStart;
             this.lastSampleTime = time;
-
+	    //if(this.lastSampleTime != this.accumWeight)
+	    //System.out.println("ERROR: lastsampletime does not match accumweight");
         } else {
 
             double timeWeight = time - this.lastSampleTime;
             this.averageAccum += timeWeight * value;
+	    this.windowAverage += timeWeight * value;
+	    this.accumWeight += timeWeight;
             this.lastSampleTime = time;
+	    //if(this.lastSampleTime != this.accumWeight)
+	    //	System.out.println("ERROR: lastsampletime does not match accumweight");
 
         }
 
@@ -191,6 +204,11 @@ public class TimeWeightedStatistic extends Statistic {
      */
     public void setWindowSize(final double size) {
         this.windowSize = size;
+    }
+
+    public double getAverage() {
+	//return this.averageAccum/this.lastSampleTime;
+	return this.averageAccum/this.accumWeight;
     }
 
 }

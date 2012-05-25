@@ -85,6 +85,7 @@
 		    <delete file="master.jar"/>
 		    <delete file="slave.jar"/>
 		    <delete file="powercap.jar"/>
+		    <delete file="singlemachine.jar"/>
     </target>
 
     <!-- Run the tests -->
@@ -128,7 +129,40 @@
             <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
+        <jar destfile="knightshift.jar">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="experiment.KnightShiftExperiment"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
+        </jar>
+        <jar destfile="singlemachine.jar">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="experiment.SingleMachine"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
+        </jar>
+        <jar destfile="cvsensitivity.jar">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="experiment.CvSensitivity"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
+        </jar>
+
     </target>
+
+
 
     <target name="javadoc">
         <mkdir dir="${javadoc-dir}"/>

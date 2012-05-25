@@ -35,6 +35,8 @@ import generator.Generator;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.ArrayList; 
+import java.util.Iterator;
 
 import stat.Statistic;
 import stat.TimeWeightedStatistic;
@@ -87,7 +89,14 @@ public class Server implements Powerable, Serializable {
     /**
      * The server's sockets.
      */
-    protected Socket[] sockets;
+    //protected Socket[] sockets;
+    protected ArrayList<Socket> sockets;
+
+    /** 
+     * Array to keep status of disabled sockets.  
+     */
+    private ArrayList<Socket> disabledSockets;
+    //private int[] disabledSockets; //0 = active, 1 = disabled
 
     /**
      * Map that saves which socket has a job to avoid searching.
@@ -143,12 +152,15 @@ public class Server implements Powerable, Serializable {
         this.arrivalGenerator = anArrivalGenerator;
         this.serviceGenerator = aServiceGenerator;
         this.queue = new LinkedList<Job>();
-        this.sockets = new Socket[theNumberOfSockets];
+        this.sockets = new ArrayList<Socket>();
+	this.disabledSockets = new ArrayList<Socket>();
+	//this.disabledSockets = new int[theNumberOfSockets];
         for (int i = 0; i < theNumberOfSockets; i++) {
-            this.sockets[i] = new Socket(experiment, this, theCoresPerSocket);
+            sockets.add(new Socket(experiment, this, theCoresPerSocket));
+	    //disabledsockets.get(i) = 0;
         }
         this.jobToSocketMap = new HashMap<Job, Socket>();
-        this.scheduler = Scheduler.LOAD_BALANCE;
+        this.scheduler = Scheduler.BIN_PACK;
         this.jobsInServerInvariant = 0;
         this.paused = false;
     }
@@ -244,8 +256,11 @@ public class Server implements Powerable, Serializable {
     public final int getJobsInSystem() {
         // Jobs that need to be counted for socket parking
         int transJobs = 0;
-        for (int i = 0; i < this.sockets.length; i++) {
-            transJobs += this.sockets[i].getNJobsWaitingForTransistion();
+        for (int i = 0; i < this.sockets.size(); i++) {
+            transJobs += this.sockets.get(i).getNJobsWaitingForTransistion();
+        }
+        for (int i = 0; i < this.disabledSockets.size(); i++) {
+            transJobs += this.disabledSockets.get(i).getNJobsWaitingForTransistion();
         }
 
         int jobsInSystem = this.getQueueLength() + this.getJobsInService()
@@ -269,6 +284,12 @@ public class Server implements Powerable, Serializable {
      * @param time - the time the update occurs
      */
     public void updateStatistics(final double time) {
+	//System.out.println("Updating Statistics");
+	/*
+	Statistic powerEstimate 
+	    = this.experiment.getStats().getStat(Constants.StatName.POWER_ESTIMATE);
+	powerEstimate.addSample(this.getPower());
+	*/
         TimeWeightedStatistic serverPowerStat
             = this.experiment.getStats().getTimeWeightedStat(
                     Constants.TimeWeightedStatName.SERVER_POWER);
@@ -288,6 +309,7 @@ public class Server implements Powerable, Serializable {
             = this.experiment.getStats().getTimeWeightedStat(
                     Constants.TimeWeightedStatName.SERVER_IDLE_FRACTION);
         serverIdleStat.addSample(idleness, time);
+	
     }
 
     //TODO what if its paused?
@@ -315,8 +337,9 @@ public class Server implements Powerable, Serializable {
      */
     public final int getRemainingCapacity() {
         int capacity = 0;
-        for (int i = 0; i < this.sockets.length; i++) {
-            capacity += this.sockets[i].getRemainingCapacity();
+        for (int i = 0; i < this.sockets.size(); i++) {
+	    //if(disabledsockets.get(i) == 0)
+	    capacity += this.sockets.get(i).getRemainingCapacity();
         }
         return capacity;
     }
@@ -328,8 +351,11 @@ public class Server implements Powerable, Serializable {
      */
     public final int getTotalCapacity() {
         int nJobs = 0;
-        for (int i = 0; i < this.sockets.length; i++) {
-            nJobs += this.sockets[i].getTotalCapacity();
+        for (int i = 0; i < this.sockets.size(); i++) {
+            nJobs += this.sockets.get(i).getTotalCapacity();
+        }
+        for (int i = 0; i < this.disabledSockets.size(); i++) {
+            nJobs += this.disabledSockets.get(i).getTotalCapacity();
         }
         return nJobs;
     }
@@ -341,8 +367,11 @@ public class Server implements Powerable, Serializable {
      */
     public int getJobsInService() {
         int nInService = 0;
-        for (int i = 0; i < this.sockets.length; i++) {
-            nInService += this.sockets[i].getJobsInService();
+        for (int i = 0; i < this.sockets.size(); i++) {
+            nInService += this.sockets.get(i).getJobsInService();
+        }
+        for (int i = 0; i < this.disabledSockets.size(); i++) {
+            nInService += this.disabledSockets.get(i).getJobsInService();
         }
 
         return nInService;
@@ -359,16 +388,23 @@ public class Server implements Powerable, Serializable {
     public void startJobService(final double time, final Job job) {
         Socket targetSocket = null;
         Socket mostUtilizedSocket = null;
-        double highestUtilization = Double.MIN_VALUE;
+        double highestUtilization = -1.0;
         Socket leastUtilizedSocket = null;
         double lowestUtilization = Double.MAX_VALUE;
-
-        for (int i = 0; i < this.sockets.length; i++) {
-            Socket currentSocket = this.sockets[i];
+	//System.out.println(this.sockets.size());
+        for (int i = 0; i < this.sockets.size(); i++) {
+	    //	    if(disabledsockets.get(i) == 1)
+	    //	continue;
+	    //System.out.println(disabledsockets.get(i));
+            Socket currentSocket = this.sockets.get(i);
             double currentUtilization = currentSocket.getInstantUtilization();
-
+	    
+	    //System.out.println(currentUtilization);
+	    //System.out.println(highestUtilization);
+	    //System.out.println(currentSocket.getRemainingCapacity());
             if (currentUtilization > highestUtilization
                     && currentSocket.getRemainingCapacity() > 0) {
+		//System.out.println("Here");
                 highestUtilization = currentUtilization;
                 mostUtilizedSocket = currentSocket;
             }
@@ -380,7 +416,9 @@ public class Server implements Powerable, Serializable {
             }
 
         }
-
+	//System.out.println("\n");
+	//System.out.println(mostUtilizedSocket);
+	//System.out.println(leastUtilizedSocket);
         // Pick a socket to put the job on depending on the scheduling policy
         if (this.scheduler == Scheduler.BIN_PACK) {
             targetSocket = mostUtilizedSocket;
@@ -437,11 +475,13 @@ public class Server implements Powerable, Serializable {
      */
     public double getInstantUtilization() {
         double avg = 0.0d;
-
-        for (int i = 0; i < this.sockets.length; i++) {
-            avg += this.sockets[i].getInstantUtilization();
+	
+        for (int i = 0; i < this.sockets.size(); i++) {
+            avg += this.sockets.get(i).getInstantUtilization();
         }
-        avg /= this.sockets.length;
+	
+        //avg /= this.sockets.size();
+	avg /= this.getTotalCapacity();
 
         return avg;
     }
@@ -460,7 +500,7 @@ public class Server implements Powerable, Serializable {
      *
      * @return the sockets the server has
      */
-    public Socket[] getSockets() {
+    public ArrayList<Socket> getSockets() {
         return this.sockets;
     }
 
@@ -470,8 +510,8 @@ public class Server implements Powerable, Serializable {
      * @param corePowerPolicy - the power management policy to use
      */
     public void setCorePolicy(final CorePowerPolicy corePowerPolicy) {
-        for (int i = 0; i < sockets.length; i++) {
-            this.sockets[i].setCorePolicy(corePowerPolicy);
+        for (int i = 0; i < sockets.size(); i++) {
+            this.sockets.get(i).setCorePolicy(corePowerPolicy);
         }
     }
 
@@ -494,8 +534,8 @@ public class Server implements Powerable, Serializable {
      */
     public double getDynamicPower() {
         double dynamicPower = 0.0d;
-        for (int i = 0; i < this.sockets.length; i++) {
-            dynamicPower += this.sockets[i].getDynamicPower();
+        for (int i = 0; i < this.sockets.size(); i++) {
+            dynamicPower += this.sockets.get(i).getDynamicPower();
         }
         double util = this.getInstantUtilization();
         double memoryPower = 10 * util;
@@ -515,7 +555,18 @@ public class Server implements Powerable, Serializable {
      * the server's CPUs (in watts).
      */
     private double getMaxCpuDynamicPower() {
-        return 25.0;
+        double dynamicPower = 0.0d;
+        for (int i = 0; i < this.sockets.size(); i++) {
+            dynamicPower += this.sockets.get(i).getMaxDynamicPower();
+        }
+        double util = 1.0;
+        double memoryPower = 10 * util;
+        double diskPower = 1.0 * util;
+        double otherPower = 5.0 * util;
+        dynamicPower += memoryPower + diskPower + otherPower;
+
+        return dynamicPower;
+        //return 25.0;
     }
 
     /**
@@ -526,13 +577,13 @@ public class Server implements Powerable, Serializable {
     public double getIdlePower() {
         double idlePower = 0.0d;
 
-        for (int i = 0; i < this.sockets.length; i++) {
-            idlePower += this.sockets[i].getIdlePower();
+        for (int i = 0; i < this.sockets.size(); i++) {
+            idlePower += this.sockets.get(i).getIdlePower();
         }
 
         double memoryPower = 25;
-        double diskPower = 9;
-        double otherPower = 10;
+        double diskPower = 10;
+        double otherPower = 50;
         idlePower += memoryPower + diskPower + otherPower;
 
         return idlePower;
@@ -546,8 +597,8 @@ public class Server implements Powerable, Serializable {
     public void resumeProcessing(final double time) {
         this.paused = false;
 
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].resumeProcessing(time);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).resumeProcessing(time);
         }
 
         while (this.getRemainingCapacity() > 0 && this.queue.size() != 0) {
@@ -564,8 +615,8 @@ public class Server implements Powerable, Serializable {
     public void pauseProcessing(final double time) {
         this.paused = true;
 
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].pauseProcessing(time);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).pauseProcessing(time);
         }
     }
 
@@ -575,8 +626,8 @@ public class Server implements Powerable, Serializable {
      * @param socketPolicy - the power management policy
      */
     public void setSocketPolicy(final SocketPowerPolicy socketPolicy) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setPowerPolicy(socketPolicy);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setPowerPolicy(socketPolicy);
         }
 
     }
@@ -587,8 +638,8 @@ public class Server implements Powerable, Serializable {
      * @param coreActivePower - the server's cores' active power (in watts)
      */
     public void setCoreActivePower(final double coreActivePower) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setCoreActivePower(coreActivePower);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setCoreActivePower(coreActivePower);
         }
 
     }
@@ -600,8 +651,8 @@ public class Server implements Powerable, Serializable {
      * when in park (in watts)
      */
     public void setCoreParkPower(final double coreParkPower) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setCoreParkPower(coreParkPower);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setCoreParkPower(coreParkPower);
         }
     }
 
@@ -612,8 +663,8 @@ public class Server implements Powerable, Serializable {
      * while idle (in watts).
      */
     public void setCoreIdlePower(final double coreIdlePower) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setCoreIdlePower(coreIdlePower);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setCoreIdlePower(coreIdlePower);
         }
     }
 
@@ -624,8 +675,8 @@ public class Server implements Powerable, Serializable {
      * the server's sockets (in watts).
      */
     public void setSocketActivePower(final double socketActivePower) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setSocketActivePower(socketActivePower);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setSocketActivePower(socketActivePower);
         }
     }
 
@@ -635,8 +686,8 @@ public class Server implements Powerable, Serializable {
      * @param socketParkPower - the park power of the socket in park (in watts)
      */
     public void setSocketParkPower(final double socketParkPower) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setSocketParkPower(socketParkPower);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setSocketParkPower(socketParkPower);
         }
     }
 
@@ -647,9 +698,43 @@ public class Server implements Powerable, Serializable {
      * @param speed - the speed to set the cores to (relative to 1.0)
      */
     public void setDvfsSpeed(final double time, final double speed) {
-        for (int i = 0; i < this.sockets.length; i++) {
-            this.sockets[i].setDvfsSpeed(time, speed);
+        for (int i = 0; i < this.sockets.size(); i++) {
+            this.sockets.get(i).setDvfsSpeed(time, speed);
         }
+    }
+
+    /**
+     * Disable sockets
+     *
+     * @param time - the time the speed is set
+     * @param numSockets - number of sockets to disable
+     */
+    public void disableSockets(final double time, final int numSockets) {
+	//System.out.println("Disabled Sockets");
+	Iterator<Socket> it = this.sockets.iterator();
+	while(it.hasNext()){
+	    Socket temp = it.next();
+	    if(temp.getInstantUtilization() == 0) {
+		this.disabledSockets.add(temp);
+		it.remove();
+		if(this.sockets.size() == numSockets)
+		    break;
+	    }
+	}
+    }
+
+    /**
+     * Enable sockets
+     *
+     * @param time - the time the speed is set
+     */
+    public void enableSockets(final double time) {
+	//System.out.println("Enabled Sockets");
+	Iterator<Socket> it = this.disabledSockets.iterator();
+	while(it.hasNext()){
+	    this.sockets.add(it.next());
+	    it.remove();
+	}
     }
 
     /**
@@ -685,7 +770,10 @@ public class Server implements Powerable, Serializable {
      * @return the maximum possible power consumption for the server (in watts)
      */
     public double getMaxPower() {
-        return 100.0;
+        double totalPower = this.getMaxCpuDynamicPower() + this.getIdlePower();
+
+        return totalPower;
+        //return 100.0;
     }
 
 }

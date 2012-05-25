@@ -61,7 +61,7 @@ public class KnightShiftExperiment {
 		// specify distribution
 		int cores = 1;
 		int sockets = 32;
-		double targetRho = 16;
+		double targetRho = .1;
 		
 		EmpiricalDistribution arrivalDistribution = EmpiricalDistribution.loadDistribution(arrivalFile, 1e-3);
 		EmpiricalDistribution serviceDistribution = EmpiricalDistribution.loadDistribution(serviceFile, 1e-3);
@@ -69,22 +69,22 @@ public class KnightShiftExperiment {
 		double averageInterarrival = arrivalDistribution.getMean();
 		double averageServiceTime = serviceDistribution.getMean();
 		double qps = 1/averageInterarrival;
-		double rho = qps/(cores*(1/averageServiceTime));
+		double rho = qps/(cores*sockets*(1/averageServiceTime));
 		double arrivalScale = rho/targetRho;
 		averageInterarrival = averageInterarrival*arrivalScale;
 		double serviceRate = 1/averageServiceTime;
 		double scaledQps =(qps/arrivalScale);
 
-//		System.out.println("Cores " + cores);
-//		System.out.println("rho " + rho);		
-//		System.out.println("recalc rho " + scaledQps/(cores*(1/averageServiceTime)));
-//		System.out.println("arrivalScale " + arrivalScale);
-//		System.out.println("Average interarrival time " + averageInterarrival);
-//		System.out.println("QPS as is " +qps);
-//		System.out.println("Scaled QPS " +scaledQps);
-//		System.out.println("Service rate as is " + serviceRate);
-//		System.out.println("Service rate x" + cores + " is: "+ (serviceRate)*cores);
-//		System.out.println("\n------------------\n");
+		System.out.println("Cores " + cores*sockets);
+		System.out.println("rho " + rho);		
+		System.out.println("recalc rho " + scaledQps/(cores*sockets*(1/averageServiceTime)));
+		System.out.println("arrivalScale " + arrivalScale);
+		System.out.println("Average interarrival time " + averageInterarrival);
+		System.out.println("QPS as is " +qps);
+		System.out.println("Scaled QPS " +scaledQps);
+		System.out.println("Service rate as is " + serviceRate);
+		System.out.println("Service rate x" + cores*sockets + " is: "+ (serviceRate)*cores*sockets);
+		System.out.println("\n------------------\n");
 
 		// setup experiment
 		ExperimentInput experimentInput = new ExperimentInput();		
@@ -97,6 +97,7 @@ public class KnightShiftExperiment {
 		ExperimentOutput experimentOutput = new ExperimentOutput();
 		experimentOutput.addOutput(StatName.SOJOURN_TIME, .05, .95, .05, 5000);
 		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .05, .95, .05, 5000, .1);
+		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_UTILIZATION, .05, .95, .05, 5000, .1);
 
 		Experiment experiment = new Experiment("KnightShift test", rand, experimentInput, experimentOutput);
 		
@@ -155,9 +156,10 @@ public class KnightShiftExperiment {
 		double responseTime99th = experiment.getStats().getStat(StatName.SOJOURN_TIME).getQuantile(.99);
 		System.out.println("Response 99: " + responseTime99th);
 		double averagePower = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_POWER).getAverage();
-		//double averagePower = experiment.getStats().getStat(StatName.POWER_ESTIMATE).getAverage();
 		System.out.println("Average Power: " + averagePower);
-
+		double averageUtilization = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_UTILIZATION).getAverage();
+		System.out.println("Average Utilization: " + averageUtilization);
+		//System.out.println("Number of Transitions: " + ksServer.getNumberOfTransitions());
 		
 	}//End run()
 	

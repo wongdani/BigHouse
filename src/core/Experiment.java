@@ -215,6 +215,8 @@ public final class Experiment implements Serializable, Cloneable {
             this.currentTime = currentEvent.getTime();
             currentEvent.process();
             this.nEventsProccessed++;
+	    //Added by wongdani
+	    this.dataCenter.updateStatistics(this.currentTime);
             if (this.nEventsProccessed > printSamples) {
                 System.out.println("Processed " + this.nEventsProccessed
                             + " events");

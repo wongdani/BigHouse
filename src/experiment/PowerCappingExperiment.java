@@ -97,6 +97,8 @@ public class PowerCappingExperiment {
 		ExperimentOutput experimentOutput = new ExperimentOutput();
 		experimentOutput.addOutput(StatName.SOJOURN_TIME, .05, .95, .05, 5000);
 		experimentOutput.addOutput(StatName.SERVER_LEVEL_CAP, .05, .95, .05, 5000);
+		//experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .01, .5, .01, 50000, .001);
+		//experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_UTILIZATION, .01, .5, .01, 50000, .001);
 		Experiment experiment = new Experiment("Power capping test", rand, experimentInput, experimentOutput);
 		
 		// setup datacenter
@@ -143,7 +145,8 @@ public class PowerCappingExperiment {
 		System.out.println("Response 95: " + responseTime95th);
 		double averageServerLevelCap = experiment.getStats().getStat(StatName.SERVER_LEVEL_CAP).getAverage();
 		System.out.println("Average Server Cap : " + averageServerLevelCap);
-		
+		double averageUtilization = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_UTILIZATION).getAverage();
+		System.out.println("Average Utilization : " + averageUtilization);
 	}//End run()
 	
 	public static void main(String[] args) {

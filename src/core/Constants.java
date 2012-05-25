@@ -75,6 +75,9 @@ public final class Constants {
 
         /** Amount of capping (in watts) for an individual server. */
         SERVER_LEVEL_CAP,
+
+	    POWER_ESTIMATE,
+
     }
 
     /**
