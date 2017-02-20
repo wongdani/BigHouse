@@ -105,7 +105,7 @@ public class DistributedPowerCappingExperiment {
 //		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .01, .5, .01, 50000, .001);
 		Experiment experiment = new Experiment("Power capping test", rand, experimentInput, experimentOutput);
 		
-		DataCenter dataCenter = new DataCenter();
+		DataCenter dataCenter = new DataCenter(experiment);
 		
 //		public PowerCappingEnforcer(Experiment experiment, double capPeriod, double globalCap, double maxPower, double minPower) {
 //		int nServers = 100;

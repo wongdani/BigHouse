@@ -32,6 +32,8 @@
 package core;
 
 import datacenter.Server;
+import datacenter.DataCenter;
+import datacenter.DataCenter.ClusterScheduler;
 
 /**
  * Represents a job arriving at a server.
@@ -50,6 +52,10 @@ public final class JobArrivalEvent extends JobEvent {
      */
     private Server server;
 
+    private DataCenter dataCenter;
+
+    private ClusterScheduler clusterScheduler;
+
     /**
      * Constructs a job arriving at a server.
      *
@@ -64,6 +70,8 @@ public final class JobArrivalEvent extends JobEvent {
                            final Server aServer) {
         super(time, experiment, job);
         this.server = aServer;
+        this.dataCenter = getExperiment().getDataCenter();
+        this.clusterScheduler = dataCenter.getClusterScheduler();
     }
 
     /**
@@ -72,8 +80,37 @@ public final class JobArrivalEvent extends JobEvent {
     @Override
     public void process() {
         this.server.createNewArrival(this.getTime());
+        // Redistribute job to another server. Default is uniform
+                 if(this.clusterScheduler != ClusterScheduler.UNIFORM)
+                                 selectServer();
         this.server.insertJob(this.getTime(), this.getJob());
         this.getJob().markArrival(this.getTime());
     }
 
+    protected void selectServer() {
+        //Server newTargetServer = null;
+        if(this.clusterScheduler == ClusterScheduler.PACK){
+	    this.server = dataCenter.getPackingTargetServer(this.server);
+            //newTargetServer = dataCenter.getPackingTargetServer(this.server);
+            //if( newTargetServer != this.server ){
+                //this.server.decrementInvariants();
+                //newTargetServer.incrementInvariants();
+                //this.server = newTargetServer;
+            //}
+        }
+        else if(this.clusterScheduler == ClusterScheduler.PEAK){
+	    //System.out.println(dataCenter.allServersAbovePeak());
+	    // If all servers above peak efficiency, fall back to uniform scheduling
+	    if (dataCenter.allServersAbovePeak())
+		return;	    
+
+	    // If some servers below peak, then sort by eff & util.
+            this.server = dataCenter.getPeakTargetServer(this.server);
+            //if( newTargetServer != this.server ) {
+                //this.server.decrementInvariants();
+                //newTargetServer.incrementInvariants();
+                //this.server = newTargetServer;
+            //}
+       }
+    }
 }

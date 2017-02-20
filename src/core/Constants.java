@@ -92,7 +92,10 @@ public final class Constants {
         SERVER_UTILIZATION,
 
         /** Time-weighted fraction of time a server is idle. */
-        SERVER_IDLE_FRACTION
+        SERVER_IDLE_FRACTION,
+
+        /** Time-weighted cluster power. */
+        CLUSTER_POWER
     }
 
     /* Power breakdown for servers. */

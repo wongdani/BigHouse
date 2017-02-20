@@ -33,6 +33,12 @@ package datacenter;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.Comparator;
+import java.util.Collections;
+import core.Experiment;
+import stat.TimeWeightedStatistic;
+import core.Constants.TimeWeightedStatName;
+import core.Constants;
 
 /**
  * This class will hold all the physical objects in the datacenter for now.
@@ -52,9 +58,47 @@ public final class DataCenter implements Serializable {
     private Vector<Server> servers;
 
     /**
+     * The experiment the server is running in.
+     */
+    protected Experiment experiment;
+
+    /**
+     * The scheduling algorithm for assigning jobs to servers.
+     */
+    public static enum ClusterScheduler {
+
+        UNIFORM,
+
+        PACK,
+
+        PEAK
+
+    };
+
+
+    /**
+     * The scheduling algorithm currently used.
+     */
+    private ClusterScheduler scheduler;
+
+    /**
+     * Sets load balancing scheme
+     * @param sched  - the load balancing schduling scheme
+     */
+    public void setClusterScheduler(final ClusterScheduler sched) {
+        this.scheduler = sched;
+    }
+
+    public ClusterScheduler getClusterScheduler() {
+        return this.scheduler;
+    }
+
+
+    /**
      * Creates a new datacenter.
      */
-    public DataCenter() {
+    public DataCenter(final Experiment anExperiment) {
+	this.experiment = anExperiment;
         this.servers = new Vector<Server>();
     }
 
@@ -83,10 +127,198 @@ public final class DataCenter implements Serializable {
      *            - the time the statistics are updated
      */
     public void updateStatistics(final double time) {
+	double clusterPower = 0.0;
+
+	// Update each server's statistics (utilization, power, idleness
         Iterator<Server> iter = this.servers.iterator();
+	Server server;
         while (iter.hasNext()) {
-            iter.next().updateStatistics(time);
+	    server = iter.next();
+	    //server.updateStatistics(time);
+            //iter.next().updateStatistics(time);
+	    clusterPower += server.getPower();
         }
+
+	// Update datacenter level statistics (cluster power)	
+        TimeWeightedStatistic clusterPowerStat
+            = this.experiment.getStats().getTimeWeightedStat(
+                    Constants.TimeWeightedStatName.CLUSTER_POWER);
+        clusterPowerStat.addSample(clusterPower, time);
     }
+
+   public Server getPackingTargetServer(final Server originalServer){
+
+
+
+	// First sort servers based on efficiency and utilization
+	// Ascending order. Lowest util to highest util
+	Collections.sort(this.servers,new ServerCompareUtilOnly());
+	// Reverse order so highest util and efficiency is first
+	//Collections.reverse(this.servers);
+/*
+	for(int i = 0; i <  this.servers.size(); i++){
+		System.out.print(String.valueOf(servers.get(i).getInstantUtilization()) + "(" + String.valueOf(servers.get(i).getRemainingCapacity()) + ") ");
+	}
+	System.out.print("\n");
+*/
+
+
+   	Iterator<Server> iter = this.servers.iterator();
+	Server server;
+	Server lastActiveServer = originalServer;
+
+	// Ensure at least a single standy-by server is on
+	// if no idle server exists, find first paused server and issue
+	if(numServersIdle() == 0){
+		while(iter.hasNext()){
+			server = iter.next();
+			if( server.isPaused() ){
+			    if ( (server.getJobsInService() > 0) || (server.getQueueLength() > 0) ) {
+				// A server is sleeping and have job. already waking up
+				break;
+			    }
+			    else {
+				// A server is sleeping and have no jobs. 
+				// Send request here to wake up server
+			 	return server;
+ 			    }
+			}
+		}
+	}
+
+	iter = this.servers.iterator();
+        while (iter.hasNext()) {
+            server = iter.next();
+	    if( !server.isPaused() )
+		lastActiveServer = server;
+	    if( (server.getRemainingCapacity() > 0) && !server.isPaused())
+		return server;
+        }
+
+	return lastActiveServer;
+
+  }
+
+   class ServerCompareUtilOnly implements Comparator<Server> {
+
+	@Override
+	public int compare(Server s1, Server s2) {
+		return Double.compare(s2.getInstantUtilizationWithQueue(),s1.getInstantUtilizationWithQueue());
+	}
+
+   }
+   class ServerCompare implements Comparator<Server> {
+
+	@Override
+	public int compare(Server s1, Server s2) {
+		
+	    // First compare peak efficiency
+	    // Then compare utilization
+	    if ( Double.compare(s1.getPeakEfficiency(),s2.getPeakEfficiency()) == 0){
+		return Double.compare(s2.getInstantUtilizationWithQueue(),s1.getInstantUtilizationWithQueue());
+	    }
+	    else {
+		return Double.compare(s2.getPeakEfficiency(),s1.getPeakEfficiency()); 	   
+	    }
+	}
+
+   }
+
+   public Server getPeakTargetServer(final Server originalServer){
+
+	// First sort servers based on efficiency and utilization
+	// Ascending order. Lowest util and efficiency to highest util and efficiency
+	Collections.sort(this.servers,new ServerCompare());
+	// Reverse order so highest util and efficiency is first
+	//Collections.reverse(this.servers);
+
+	Server server;
+	Server lowestAbovePeakServer = originalServer;
+	Server lastActiveServer = originalServer;
+   	Iterator<Server> iter = this.servers.iterator();
+
+	// Ensure at least a single standy-by server is on
+	// if no idle server exists, find first paused server and issue
+	if(numServersIdle() == 0){
+		while(iter.hasNext()){
+			server = iter.next();
+			if( server.isPaused() ){
+			    if ( (server.getJobsInService() > 0) || (server.getQueueLength() > 0) ) {
+				// A server is sleeping and have job. already waking up
+				break;
+			    }
+			    else {
+				// A server is sleeping and have no jobs. 
+				// Send request here to wake up server
+			 	return server;
+ 			    }
+			}
+		}
+	}
+
+	lowestAbovePeakServer = null;	
+	iter = this.servers.iterator();
+        while (iter.hasNext()) {
+            server = iter.next();
+
+	    if(!server.isPaused())
+		lastActiveServer = server;
+
+	    if(server.isAbovePeakEfficiencyUtilization() ){
+		if(server.getRemainingCapacity() > 0)
+			lowestAbovePeakServer = server; // may not be set if all servers are low/mid EP
+		continue; // Skip issue to above peak. We know there exist some below peak.
+	    }
+	    // At this point, server is below peak, and has highest util and efficiency. Issue here.
+	    //if (server.getRemainingCapacity() > 0) // Sanity check: make sure it has free slots
+	    if(!server.isPaused() && server.getRemainingCapacity() > 0)
+	    	return server; 
+        }
+
+	// No idle servers under peak left and a idle server is waking up
+	// All servers are running 
+	// 
+	// No servers less than peak efficiency is available.  
+	// A server is already waking up
+	//
+	// 1. Wakeup a server (isPaused() && queue=0
+	// 2. Issue to lowest above peak server
+
+	// Issue to lowest above peak server
+	if(lowestAbovePeakServer != null) {
+		return lowestAbovePeakServer;
+	}else{
+		return lastActiveServer;
+	}
+	
+	//return originalServer;	
+   }
+
+   public boolean allServersAbovePeak(){
+
+	Iterator<Server> iter = this.servers.iterator();
+	Server server;
+	while (iter.hasNext()) {
+		server = iter.next();
+		if ( !server.isAbovePeakEfficiencyUtilization() )
+			return false;
+	}	
+	return true;
+   }
+
+   public int numServersIdle(){
+	int idleServers = 0;
+	Iterator<Server> iter = this.servers.iterator();
+	Server server;
+	while (iter.hasNext()) {
+		server = iter.next();
+		if ( (server.getJobsInService() == 0) && (server.getQueueLength() == 0) && !server.isPaused() ) {
+			// Server is idle if no jobs in system and running
+			idleServers++;
+		}
+	}
+
+	return idleServers;
+   }
 
 }

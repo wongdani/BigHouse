@@ -135,6 +135,19 @@ public class Server implements Powerable, Serializable {
     protected int jobsInServerInvariant;
 
     /**
+     * Utilization where peak efficiency occurs 
+     */
+    protected double peakEfficiencyUtilization;
+
+    /**
+     * Peak Efficiency 
+     */
+    protected double peakEfficiency;
+
+    public boolean searchWorkload;
+
+
+    /**
      * Creates a new server.
      *
      * @param theNumberOfSockets - the number of sockets in the server
@@ -163,6 +176,9 @@ public class Server implements Powerable, Serializable {
         this.scheduler = Scheduler.BIN_PACK;
         this.jobsInServerInvariant = 0;
         this.paused = false;
+	this.peakEfficiencyUtilization = 1.0;
+	this.peakEfficiency = 100.0/this.getMaxPower();
+	this.searchWorkload = this.experiment.getSearchWorkload();
     }
 
     /**
@@ -309,7 +325,6 @@ public class Server implements Powerable, Serializable {
             = this.experiment.getStats().getTimeWeightedStat(
                     Constants.TimeWeightedStatName.SERVER_IDLE_FRACTION);
         serverIdleStat.addSample(idleness, time);
-	
     }
 
     //TODO what if its paused?
@@ -486,6 +501,11 @@ public class Server implements Powerable, Serializable {
         return avg;
     }
 
+    public double getInstantUtilizationWithQueue(){
+	double queueUtil = this.queue.size() / this.getTotalCapacity();
+	return getInstantUtilization() + queueUtil;
+    }
+
     /**
      * Get the experiment this server is part of.
      *
@@ -538,6 +558,8 @@ public class Server implements Powerable, Serializable {
             dynamicPower += this.sockets.get(i).getDynamicPower();
         }
         double util = this.getInstantUtilization();
+    // Non-linear CPU dynamic scaling
+    //y(x) = 1.7391x^2 - 1.6512x + 0.9092 + 0.0084/x
         double memoryPower = 10 * util;
         double diskPower = 1.0 * util;
         double otherPower = 5.0 * util;
@@ -774,6 +796,19 @@ public class Server implements Powerable, Serializable {
 
         return totalPower;
         //return 100.0;
+    }
+
+    public double getPeakEfficiencyUtilization() {
+	return this.peakEfficiencyUtilization;
+    }
+
+    public double getPeakEfficiency() {
+	return this.peakEfficiency;
+    }
+
+    public boolean isAbovePeakEfficiencyUtilization() {
+	//System.out.println(String.valueOf(this.getInstantUtilization()) + " " +  String.valueOf(this.peakEfficiencyUtilization) + (this.getInstantUtilization() >= this.peakEfficiencyUtilization));
+	return this.getInstantUtilization() >= this.peakEfficiencyUtilization;
     }
 
 }

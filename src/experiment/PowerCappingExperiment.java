@@ -102,7 +102,7 @@ public class PowerCappingExperiment {
 		Experiment experiment = new Experiment("Power capping test", rand, experimentInput, experimentOutput);
 		
 		// setup datacenter
-		DataCenter dataCenter = new DataCenter();
+		DataCenter dataCenter = new DataCenter(experiment);
 		
 		double capPeriod = 1.0;
 		double globalCap = 65*nServers;

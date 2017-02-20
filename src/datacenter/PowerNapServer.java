@@ -26,7 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * @author David Meisner (meisner@umich.edu)
- *
+ * TEST
  */
 package datacenter;
 
@@ -56,7 +56,7 @@ public class PowerNapServer extends Server {
     /**
      * The power of the server while in nap mode (in watts).
      */
-    private double napPower;
+    protected double napPower;
 
     /**
      * The power state of the PowerNap server.
@@ -79,13 +79,17 @@ public class PowerNapServer extends Server {
     protected PowerNapState powerNapState;
 
     /** The transition event if the server is transitioning. */
-    private PowerNapTransitionedToNapEvent transitionEvent;
+    public PowerNapTransitionedToNapEvent transitionEvent;
 
     /** Whether the PowerNap server is transitioning to active. */
     private boolean transitioningToActive;
 
     /** Whether the PowerNap server is transitioning to nap. */
-    private boolean transitioningToNap;
+    public boolean transitioningToNap;
+
+
+    /** The transition event if the server is transitioning. */
+    public NapTransitionEvent transitionNapEvent;
 
     /**
      * Creates a new PowerNapServer.
@@ -111,10 +115,19 @@ public class PowerNapServer extends Server {
 
         this.napTransitionTime = theNapTransitionTime;
         this.napPower = theNapPower;
-        this.powerNapState = PowerNapState.NAP;
+        this.powerNapState = PowerNapState.ACTIVE;
         this.transitioningToActive = false;
         this.transitioningToNap = false;
-        this.pauseProcessing(0);
+        //this.pauseProcessing(0);
+        
+	     double napTime = 0.5;	
+	     //System.out.println("Server idling: 0" );
+             NapTransitionEvent napEvent
+                 = new NapTransitionEvent(napTime,
+                                     this.getExperiment(),
+                                     this);
+             this.getExperiment().addEvent(napEvent);
+	     this.transitionNapEvent = napEvent;
     }
 
     /**
@@ -139,6 +152,11 @@ public class PowerNapServer extends Server {
         if (this.powerNapState == PowerNapState.ACTIVE) {
 
             super.insertJob(time, job);
+	    
+	    if ( this.transitionNapEvent != null ){
+ 		this.getExperiment().cancelEvent(this.transitionNapEvent);
+	        this.transitionNapEvent = null;
+            }
 
         } else if (this.powerNapState == PowerNapState.TRANSITIONING_TO_NAP) {
 
@@ -215,6 +233,7 @@ public class PowerNapServer extends Server {
      *
      * @param time - the time the server is transitioned
      */
+/*
     public void transistionToNap(final double time) {
         // Make sure this transition is valid
         if (this.isNapping()) {
@@ -224,7 +243,6 @@ public class PowerNapServer extends Server {
         if (this.isPaused()) {
             Sim.fatalError("Trying to transition to nap when paused");
         }
-
         this.powerNapState = PowerNapState.TRANSITIONING_TO_NAP;
         this.transitioningToNap = true;
         double napTime = time + this.napTransitionTime;
@@ -236,7 +254,7 @@ public class PowerNapServer extends Server {
         this.getExperiment().addEvent(napEvent);
         this.pauseProcessing(time);
     }
-
+*/
     /**
      * Removes a job from the server.
      *
@@ -249,7 +267,19 @@ public class PowerNapServer extends Server {
     public void removeJob(final double time, final Job job) {
         super.removeJob(time, job);
         if (this.getJobsInService() == 0) {
-            this.transistionToNap(time);
+            //this.transistionToNap(time); //DW: Sleep in 2 minute. Check if still idle.
+            if ( this.transitionNapEvent != null )  {
+	       this.getExperiment().cancelEvent(this.transitionNapEvent); 
+	       this.transitionNapEvent = null;
+	    }
+	     double napTime = time + 10.0;	
+	     //System.out.println("Server idling: " + String.valueOf(time));
+             NapTransitionEvent napEvent
+                 = new NapTransitionEvent(napTime,
+                                     this.getExperiment(),
+                                     this);
+             this.getExperiment().addEvent(napEvent);
+	     this.transitionNapEvent = napEvent;
         }
     }
 
@@ -265,6 +295,7 @@ public class PowerNapServer extends Server {
         this.powerNapState = PowerNapState.ACTIVE;
         // Start all the jobs possible and queue the ones that aren't
         this.resumeProcessing(time);
+	//System.out.println("Server active");
     }
 
     /**
@@ -292,6 +323,7 @@ public class PowerNapServer extends Server {
      */
     public void setToNap(final double time) {
         // Server is now fully in the nap mode
+        //System.out.println("Server napping");
         this.transitioningToNap = false;
         this.powerNapState = PowerNapState.NAP;
         this.transitionEvent = null;

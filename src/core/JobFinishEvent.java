@@ -123,6 +123,8 @@ public final class JobFinishEvent extends JobEvent {
                                 - this.getJob().getArrivalTime();
         Statistic sojournStat = this.getExperiment().getStats().getStat(
                                     Constants.StatName.SOJOURN_TIME);
+	if(this.server.searchWorkload)
+	    sojournTime *= 10.0;
         sojournStat.addSample(sojournTime);
 
 

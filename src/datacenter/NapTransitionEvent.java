@@ -32,13 +32,13 @@ package datacenter;
 
 import core.AbstractEvent;
 import core.Experiment;
-
+import datacenter.PowerNapServer.PowerNapState;
 /**
  * Represents a PowerNap server transitioning from Active to Nap.
  *  
  * @author David Meisner (meisner@umich.edu)
  */
-public final class PowerNapTransitionedToNapEvent extends AbstractEvent {
+public final class NapTransitionEvent extends AbstractEvent {
 
     /**
      * The serialization id.
@@ -51,13 +51,13 @@ public final class PowerNapTransitionedToNapEvent extends AbstractEvent {
     private PowerNapServer server;
 
     /**
-     * Creates a new PowerNapTransitionedToNapEvent.
+     * Creates a new NapTransitionEvent.
      *
      * @param time - the time the server transitioned
      * @param experiment - the experiment the event takes place in
      * @param aServer - the server that transitioned
      */
-    public PowerNapTransitionedToNapEvent(final double time,
+    public NapTransitionEvent(final double time,
                                           final Experiment experiment,
                                           final PowerNapServer aServer) {
         super(time, experiment);
@@ -70,7 +70,39 @@ public final class PowerNapTransitionedToNapEvent extends AbstractEvent {
      */
     @Override
     public void process() {
-        this.server.setToNap(this.getTime());
+    
+        // Make sure this transition is valid
+        if (this.server.isNapping()) {
+            //Sim.fatalError("Trying to transition to nap when napping");
+	    this.server.transitionNapEvent=null;
+            return;
+        }
+        // Make sure this transition is valid
+        if (this.server.isPaused()) {
+            //Sim.fatalError("Trying to transition to nap when paused");
+	    this.server.transitionNapEvent=null;
+            return;
+        }
+	// Make sure no jobs in system and at least one server idling
+ 	if( (this.server.getJobsInService() != 0) || (this.server.getQueueLength() != 0) || 
+	    ((this.getExperiment().getDataCenter().numServersIdle() <= 1) && (this.server.napTransitionTime >= 1) )) {
+		// Job in system. do not nap
+		//System.out.println("Server not busy" + String.valueOf(this.time));
+		this.server.transitionNapEvent=null;
+		return;
+	}	
+        this.server.powerNapState = PowerNapState.TRANSITIONING_TO_NAP;
+        this.server.transitioningToNap = true;
+        double napTime = this.time + this.server.napTransitionTime;
+        PowerNapTransitionedToNapEvent napEvent
+            = new PowerNapTransitionedToNapEvent(napTime,
+                                                 this.getExperiment(),
+                                                 this.server);
+	//System.out.println("System napping " + String.valueOf(this.time) + " " + String.valueOf(napTime));
+        this.server.transitionEvent = napEvent;
+        this.getExperiment().addEvent(napEvent);
+        this.server.pauseProcessing(time);
+	this.server.transitionNapEvent=null;
     }
 
 }

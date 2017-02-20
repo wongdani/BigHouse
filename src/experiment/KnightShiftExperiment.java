@@ -102,7 +102,7 @@ public class KnightShiftExperiment {
 		Experiment experiment = new Experiment("KnightShift test", rand, experimentInput, experimentOutput);
 		
 		// setup datacenter
-		DataCenter dataCenter = new DataCenter();
+		DataCenter dataCenter = new DataCenter(experiment);
 
 		// specify servers
 		/*

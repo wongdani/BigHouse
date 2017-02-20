@@ -48,25 +48,29 @@ import datacenter.DataCenter;
 import datacenter.PowerCappingEnforcer;
 import datacenter.PowerNapServer;
 import datacenter.Server;
+import datacenter.ServerLowEP;
+import datacenter.ServerMidEP;
+import datacenter.ServerHighEP;
+import datacenter.ServerSuperEP;
 import datacenter.Core.CorePowerPolicy;
 import datacenter.Socket.SocketPowerPolicy;
 
-public class SingleMachine {
+public class EPMachine {
 
-	public SingleMachine(){
+	public EPMachine(){
 		
 	}
-	
-	public void run(String workloadDir, String workload, double targetRho) {
-		
 
+	
+	public void run(String workloadDir, String workload, double targetRho, String epLevel) {
+		
 		ExperimentInput experimentInput = new ExperimentInput();		
 
 		String arrivalFile = workloadDir+"workloads/"+workload+".arrival.cdf";
 		String serviceFile = workloadDir+"workloads/"+workload+".service.cdf";
 
 		int cores = 1;
-		int sockets = 32;
+		int sockets = 72;
 		//double targetRho = .1;
 		
 		EmpiricalDistribution arrivalDistribution = EmpiricalDistribution.loadDistribution(arrivalFile, 1e-3);
@@ -99,38 +103,65 @@ public class SingleMachine {
 
 		ExperimentOutput experimentOutput = new ExperimentOutput();
 		experimentOutput.addOutput(StatName.SOJOURN_TIME, .10, .9, .10, 5000);
-		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .10, .9, .10, 5000, 1);
-		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_UTILIZATION, .10, .9, .10, 5000, .1);
+		//experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_POWER, .10, .9, .10, 5000, 1);
+		/*   
+ 		*
+ 		*	TIME WEIGHT STATISTICS FOR SERVERS ARE COMMENTED OUT FOR PERFORMANCE REASONS!!!!!! 
+ 		*	RENABLE IN DATACENTER UPDATE STATISTICS BY UNCOMMENTING 
+ 		*    		 
+ 		*    		 */
+		//experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.SERVER_UTILIZATION, .10, .9, .10, 5000, .1);
+		experimentOutput.addTimeWeightedOutput(TimeWeightedStatName.CLUSTER_POWER, .10, .9, .10, 5000, 1);
 
 		Experiment experiment = new Experiment("Single Machine", rand, experimentInput, experimentOutput);
 		
 		DataCenter dataCenter = new DataCenter(experiment);		
 
-		double primaryPeakPower = 17;
-		double primaryIdlePower = 15;
-		int nServers = 1;
+		//double primaryPeakPower = 17;
+		//double primaryIdlePower = 15;
+		int nServers = 2;
 		for(int i = 0; i < nServers; i++) {
-			Server server = new Server(sockets, cores, experiment, arrivalGenerator, serviceGenerator);
-			//Server server = new ServerLowEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator);
-			//Server server = new ServerMidEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator);
-			//Server server = new ServerHighEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator);
-			//Server server = new ServerSuperEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator);
+		
+			if( epLevel.equals("Low") ){
+					Server server = new ServerLowEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator, 0.001, 5);
+					server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
+					server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
+					dataCenter.addServer(server);
+			}
+			else if (epLevel.equals("Mid")) {
+					Server server = new ServerMidEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator, 0.001, 5);
+					server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
+					server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
+					dataCenter.addServer(server);
+			}
+			else if (epLevel.equals("High")) {
+					Server server = new ServerHighEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator, 0.001, 5);
+					server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
+					server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
+					dataCenter.addServer(server);
+			}
+			else if (epLevel.equals("Super")) {
+					Server server = new ServerSuperEP(sockets, cores, experiment, arrivalGenerator, serviceGenerator, 0.001, 5);
+					server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
+					server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
+					dataCenter.addServer(server);
+			}
 //			Server server = new PowerNapServer(sockets, cores, experiment, arrivalGenerator, serviceGenerator, 0.001, 5);
-			server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
-			server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
-			double coreActivePower = (primaryPeakPower-primaryIdlePower)/cores;
-			double coreHaltPower = 0; //coreActivePower*.2;
-			double coreParkPower = 0;
+			//server.setSocketPolicy(SocketPowerPolicy.NO_MANAGEMENT);
+			//server.setCorePolicy(CorePowerPolicy.NO_MANAGEMENT);	
+			//double coreActivePower = (primaryPeakPower-primaryIdlePower)/cores;
+			//double coreHaltPower = 0; //coreActivePower*.2;
+			//double coreParkPower = 0;
 
-			double socketActivePower = primaryIdlePower/sockets;
-			double socketParkPower = 0;
+			//double socketActivePower = primaryIdlePower/sockets;
+			//double socketParkPower = 0;
 
-			server.setCoreActivePower(coreActivePower);
-			server.setCoreParkPower(coreParkPower);
-			server.setCoreIdlePower(coreHaltPower);
-			server.setSocketActivePower(socketActivePower);
-			server.setSocketParkPower(socketParkPower);
-			dataCenter.addServer(server);
+			//server.setCoreActivePower(coreActivePower);
+			//server.setCoreParkPower(coreParkPower);
+			//server.setCoreIdlePower(coreHaltPower);
+			//server.setSocketActivePower(socketActivePower);
+			//server.setSocketParkPower(socketParkPower);
+			//dataCenter.addServer(server);
 		}//End for i
 		
 		
@@ -145,16 +176,16 @@ public class SingleMachine {
 		double responseTime99th = experiment.getStats().getStat(StatName.SOJOURN_TIME).getQuantile(.99);
 		System.out.println("Response 99: " + responseTime99th);
 
-		double averagePower = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_POWER).getAverage();
-		System.out.println("Average Power: " + averagePower);
-		double averageUtilization = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_UTILIZATION).getAverage();
-		System.out.println("Average Utilization: " + averageUtilization);
+		double averageClusterPower = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.CLUSTER_POWER).getAverage();
+		System.out.println("Average Cluster Power: " + averageClusterPower);
+		//double averageUtilization = experiment.getStats().getTimeWeightedStat(TimeWeightedStatName.SERVER_UTILIZATION).getAverage();
+		//System.out.println("Average Utilization: " + averageUtilization);
 
 	}//End run()
 	
 	public static void main(String[] args) {
-		SingleMachine exp  = new SingleMachine();
-		exp.run(args[0],args[1],Double.valueOf(args[2]));
+		EPMachine exp  = new EPMachine();
+		exp.run(args[0],args[1],Double.valueOf(args[2]),args[3]);
 	}
 	
 }

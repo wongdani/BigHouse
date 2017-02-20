@@ -45,7 +45,7 @@ import core.Constants.StatName;
  *
  * @author David Meisner (meisner@umich.edu)
  */
-public final class PowerCappingEnforcer implements Serializable {
+public class PowerCappingEnforcer implements Serializable {
 
     /**
      * The serialization id.

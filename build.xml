@@ -106,7 +106,7 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
         <jar destfile="slave.jar" filesetmanifest="mergewithoutmain">
@@ -116,7 +116,7 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
         <jar destfile="powercap.jar">
@@ -126,7 +126,7 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
         <jar destfile="knightshift.jar">
@@ -136,7 +136,7 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
         <jar destfile="singlemachine.jar">
@@ -146,7 +146,27 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
+        </jar>
+        <jar destfile="EPmachine.jar">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="experiment.EPMachine"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
+        </jar>
+        <jar destfile="PeakScheduling.jar">
+            <manifest>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Main-Class" value="experiment.PeakScheduling"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
         <jar destfile="cvsensitivity.jar">
@@ -156,7 +176,7 @@
                 <attribute name="Class-Path" value="."/>
             </manifest>
             <fileset dir="bin"/>
-            <zipfileset excludes="META-INF/*.SF" src="/usr/share/ant/lib/ant-junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/usr/share/java/ant/ant-junit.jar"/>
             <zipfileset excludes="META-INF/*.SF" src="ssj.jar"/>
         </jar>
 

@@ -268,7 +268,7 @@ public class Statistic implements Serializable {
         this.lag = 1;
         this.simpleStat = new SimpleStatistic();
         this.calibrationSequence = new Sequence();
-        this.calibrationSamples = 5000;
+        this.calibrationSamples = 2500; // Originally: 5000;
     }
 
     //TODO comment
@@ -677,7 +677,7 @@ public class Statistic implements Serializable {
                 + ", quantileAccuracy: " + this.getQuantileAccuracy()
                 + ", goodSamples: " + this.steadyStateSamples
                 + ", warmupSamples: " + this.discardedWarmupSamples
-                + ", calibrationSamples: " + this.calibrationSamples
+                + ", calibrationSamples: " + this.calibrationSequence.getSize()// this.calibrationSamples
                 + ", stdDev: " + this.getStdDev()
                 + ", lag: " + this.lag;
         System.out.println(out);
