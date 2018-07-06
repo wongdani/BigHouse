@@ -33,6 +33,7 @@
  * This package is only used during development
  * It's not a part of final SQS 
  */
+
 package experiment;
 
 //TODO delete this
@@ -50,6 +51,9 @@ import datacenter.PowerNapServer;
 import datacenter.Server;
 import datacenter.Core.CorePowerPolicy;
 import datacenter.Socket.SocketPowerPolicy;
+
+import java.io.*;
+import java.util.*;
 
 public class SingleMachine {
 
@@ -147,9 +151,41 @@ public class SingleMachine {
 		System.out.println("Average Utilization: " + averageUtilization);
 
 	}//End run()
-	
+
+	public static void getCSV(String fileName) {
+		String line = "";
+		String csvSplitChar = ",";
+		BufferedReader bufReader = null;
+		
+		ArrayList<String> timeStamps = new ArrayList<String>();
+		ArrayList<String> regValues = new ArrayList<String>();
+
+		try {
+			bufReader = new BufferedReader(new FileReader("workloads/" + fileName));
+			while( (line = bufReader.readLine()) != null) {
+				String[] getLine = line.split(csvSplitChar);
+				if(getLine[1].equals("RegDTest")) { //FIXME: prone to errors if file doesnt start with "RegDTest"
+					continue; // ignore this line
+				}
+				else {
+					timeStamps.add(getLine[0]);
+					regValues.add(getLine[1]);
+				}
+			}
+		
+			System.out.println("File read complete, printing values:");
+			for(int i = 0; i < timeStamps.size(); ++i) {
+				System.out.println(timeStamps.get(i) + ", " + regValues.get(i));
+			}
+			System.out.println("End of values");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void main(String[] args) {
 		SingleMachine exp  = new SingleMachine();
+		exp.getCSV("reg-d.csv");
 		exp.run(args[0],args[1]);
 	}
 	
