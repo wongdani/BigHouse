@@ -54,7 +54,9 @@ import datacenter.Socket.SocketPowerPolicy;
 
 import java.io.*;
 import java.util.*;
-
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.lang.Long;
 public class SingleMachine {
 
 	public SingleMachine(){
@@ -157,8 +159,12 @@ public class SingleMachine {
 		String csvSplitChar = ",";
 		BufferedReader bufReader = null;
 		
-		ArrayList<String> timeStamps = new ArrayList<String>();
-		ArrayList<String> regValues = new ArrayList<String>();
+		String timeInSec = "";
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		ArrayList<Long> timeStamps = new ArrayList<Long>();
+		ArrayList<Double> regValues = new ArrayList<Double>();
 
 		try {
 			bufReader = new BufferedReader(new FileReader("workloads/" + fileName));
@@ -168,8 +174,12 @@ public class SingleMachine {
 					continue; // ignore this line
 				}
 				else {
-					timeStamps.add(getLine[0]);
-					regValues.add(getLine[1]);
+					//getLine[0] is in sec
+					timeInSec = getLine[0];	
+					date = sdf.parse("1970-01-01 " + timeInSec);
+					
+					timeStamps.add(date.getTime());
+					regValues.add(Double.parseDouble(getLine[1]) );
 				}
 			}
 		
@@ -180,9 +190,10 @@ public class SingleMachine {
 			System.out.println("End of values");
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (ParseException e) {
+			System.out.println("Problem reading date\n");
 		}
 	}
-
 	public static void main(String[] args) {
 		SingleMachine exp  = new SingleMachine();
 		exp.getCSV("reg-d.csv");
