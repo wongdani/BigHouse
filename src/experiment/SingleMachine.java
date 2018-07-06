@@ -178,7 +178,7 @@ public class SingleMachine {
 					timeInSec = getLine[0];	
 					date = sdf.parse("1970-01-01 " + timeInSec);
 					
-					timeStamps.add(date.getTime());
+					timeStamps.add(date.getTime() - 28800000); // subtract for timezone diff
 					regValues.add(Double.parseDouble(getLine[1]) );
 				}
 			}
