@@ -135,6 +135,12 @@ public class Server implements Powerable, Serializable {
     protected int jobsInServerInvariant;
 
     /**
+     * A lookup table for power consumption given a utilization of 0-1; used 
+     * in getDynamicPower()
+     */
+     private HashMap<double, double> powerConsumptionTable; 
+
+    /**
      * Creates a new server.
      *
      * @param theNumberOfSockets - the number of sockets in the server
@@ -163,6 +169,31 @@ public class Server implements Powerable, Serializable {
         this.scheduler = Scheduler.BIN_PACK;
         this.jobsInServerInvariant = 0;
         this.paused = false;
+
+	powerConsumptionTable.put(0,0);
+	powerConsumptionTable.put(0.0009, 21.5354);
+	powerConsumptionTable.put(0.0455, 36.0738);
+	powerConsumptionTable.put(0.0909, 44.552);
+	powerConsumptionTable.put(0.15, 49.2765);
+	powerConsumptionTable.put(0.1818, 51.9965);
+	powerConsumptionTable.put(0.2273, 54.597);
+	powerConsumptionTable.put(0.2727, 56.865);
+	powerConsumptionTable.put(0.3182, 58.6705);
+	powerConsumptionTable.put(0.3636, 60.8018);
+	powerConsumptionTable.put(0.4091, 62.6055);
+	powerConsumptionTable.put(0.4545, 64.8456);
+	powerConsumptionTable.put(0.5, 66.8099);
+	powerConsumptionTable.put(0.5455, 68.3646);
+	powerConsumptionTable.put(0.5909, 70.4242);
+	powerConsumptionTable.put(0.6364, 72.3198);
+	powerConsumptionTable.put(0.6818, 74.2039);
+	powerConsumptionTable.put(0.7273, 75.7969);
+	powerConsumptionTable.put(0.7727, 77.545);
+	powerConsumptionTable.put(0.8182, 79.578);
+	powerConsumptionTable.put(0.8636, 80.665);
+	powerConsumptionTable.put(0.9091, 82.0283);
+	powerConsumptionTable.put(0.9545, 83.3915);
+	powerConsumptionTable.put(1.0, 84.8922);
     }
 
     /**
@@ -534,6 +565,8 @@ public class Server implements Powerable, Serializable {
      */
     public double getDynamicPower() {
         double dynamicPower = 0.0d;
+	/* 
+ 	// OLD POWER SETTINGS
         for (int i = 0; i < this.sockets.size(); i++) {
             dynamicPower += this.sockets.get(i).getDynamicPower();
         }
@@ -542,8 +575,69 @@ public class Server implements Powerable, Serializable {
         double diskPower = 1.0 * util;
         double otherPower = 5.0 * util;
         dynamicPower += memoryPower + diskPower + otherPower;
-
+	//////////////////////////
+	
+	// NEW POWER SETTINGS:
+	*/
+	dynamicPower = getPowerConsumption(util);
         return dynamicPower;
+    }
+
+    /**
+     * Gets power consumption of cpu given a utilization
+     *
+     * @return the power consumption of the cpu (in watts)
+     */
+     private double getPowerConsumption(double util) {
+	if(powerConsumptionTable.containsKey(util)) {
+		return powerConsumptionTable.get(util);
+	}
+	else if(util > 1.0) {
+		//FIXME: How to handle util > 1.0?
+		System.out.print("WARNING: UNEXPECTED UTILIZATION GREATER THAN 1: " + util);
+		return 84.8922; // max cpu power consumption from table
+	}
+	else if(util < 0) {
+		//FIXME: How to handle util < 0?
+		System.out.print("WARNING: UNEXPECTED UTILIZATION LESS THAN 0: " + util);
+		return 0; 
+	}
+	else {
+	// we have an 'ugly' util value
+	// so return an approximated value
+		double arrOfLimits[] = getLimits(value);
+		double top = arrOfLimits[0];
+		double bottom = arrOfLimits[1];
+		double ratio = (value - bottom) / (top - bottom);
+		return (top + bottom) * ratio;
+	}
+    }
+
+    /**
+     * Helper function used in getPowerConsumption() that gets the nearest util values from 
+     * powerConsumptionTable that are closest to <target>. 
+     *
+     * @return an array of doubles containing the closest util values greater than and lesss than <target>
+     */
+    private double[] getLimits(double target) {
+	double top = 0;
+	double bottom = 0;
+	prevMapEntry = 0;
+	double arrOfLimits[] = new double[2];
+
+	// iterates through hashmap until current entry is larger than target, then
+	// saves current/previous entries as top/lower limits of target respectively
+	for(Map.Entry mapEntry: powerConsumptionTable.entrySet() ) {
+		if(mapEntry > target) {
+			top = mapEntry; 
+			bottom = prevMapEntry;
+			break;	
+		}
+		prevMapEntry = mapEntry; // prevMapEntry is updated at end of loop to save the prev entry
+	}  
+	arrOfLimits[0] = top;
+	arrOfLimits[1] = bottom;
+	return arrOfLimits;
     }
 
     //TODO get rid of magic numbers
