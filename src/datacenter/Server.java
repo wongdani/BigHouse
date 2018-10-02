@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ArrayList; 
 import java.util.Iterator;
+import java.lang.Double;
 
 import stat.Statistic;
 import stat.TimeWeightedStatistic;
@@ -138,7 +139,7 @@ public class Server implements Powerable, Serializable {
      * A lookup table for power consumption given a utilization of 0-1; used 
      * in getDynamicPower()
      */
-     private HashMap<double, double> powerConsumptionTable; 
+     private HashMap<Double, Double> powerConsumptionTable; 
 
     /**
      * Creates a new server.
@@ -170,7 +171,7 @@ public class Server implements Powerable, Serializable {
         this.jobsInServerInvariant = 0;
         this.paused = false;
 
-	powerConsumptionTable.put(0,0);
+	powerConsumptionTable.put(0.0,0.0);
 	powerConsumptionTable.put(0.0009, 21.5354);
 	powerConsumptionTable.put(0.0455, 36.0738);
 	powerConsumptionTable.put(0.0909, 44.552);
@@ -576,9 +577,10 @@ public class Server implements Powerable, Serializable {
         double otherPower = 5.0 * util;
         dynamicPower += memoryPower + diskPower + otherPower;
 	//////////////////////////
-	
-	// NEW POWER SETTINGS:
 	*/
+
+	// NEW POWER SETTINGS:
+	double util = this.getInstantUtilization();
 	dynamicPower = getPowerConsumption(util);
         return dynamicPower;
     }
@@ -605,10 +607,10 @@ public class Server implements Powerable, Serializable {
 	else {
 	// we have an 'ugly' util value
 	// so return an approximated value
-		double arrOfLimits[] = getLimits(value);
+		double arrOfLimits[] = getLimits(util);
 		double top = arrOfLimits[0];
 		double bottom = arrOfLimits[1];
-		double ratio = (value - bottom) / (top - bottom);
+		double ratio = (util - bottom) / (top - bottom);
 		return (top + bottom) * ratio;
 	}
     }
@@ -622,12 +624,12 @@ public class Server implements Powerable, Serializable {
     private double[] getLimits(double target) {
 	double top = 0;
 	double bottom = 0;
-	prevMapEntry = 0;
+	double prevMapEntry = 0;
 	double arrOfLimits[] = new double[2];
 
 	// iterates through hashmap until current entry is larger than target, then
 	// saves current/previous entries as top/lower limits of target respectively
-	for(Map.Entry mapEntry: powerConsumptionTable.entrySet() ) {
+	for(double mapEntry: powerConsumptionTable.keySet() ) {
 		if(mapEntry > target) {
 			top = mapEntry; 
 			bottom = prevMapEntry;
