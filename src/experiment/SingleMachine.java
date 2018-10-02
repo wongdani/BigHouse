@@ -153,7 +153,7 @@ public class SingleMachine {
 		System.out.println("Average Utilization: " + averageUtilization);
 
 	}//End run()
-
+/*
 	public static void getCSV(String fileName) {
 		String line = "";
 		String csvSplitChar = ",";
@@ -193,10 +193,10 @@ public class SingleMachine {
 		} catch (ParseException e) {
 			System.out.println("Problem reading date\n");
 		}
-	}
+	}*/
 	public static void main(String[] args) {
 		SingleMachine exp  = new SingleMachine();
-		exp.getCSV("reg-d.csv");
+		//exp.getCSV("reg-d.csv");
 		exp.run(args[0],args[1]);
 	}
 	
