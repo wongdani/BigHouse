@@ -208,7 +208,8 @@ public final class Experiment implements Serializable, Cloneable {
         this.initialize();
         long startTime = System.currentTimeMillis();
 	long checkRegDTime = 5000; // start at 5 seconds 
-	long curTime;
+	long curTime= 0;
+	long elapsedTime = 0;
 
         this.nEventsProccessed = 0;
         Sim.printBanner();
@@ -218,14 +219,16 @@ public final class Experiment implements Serializable, Cloneable {
         long printSamples = (long) Math.pow(10, orderOfMag);
         while (!stop) {
 	    curTime = System.currentTimeMillis();
-	    if(curTime > checkRegDTime) {
+	    elapsedTime = curTime - startTime;
+	    if(elapsedTime > checkRegDTime) {
 		System.out.print("Regulation-D signal at ");
-		System.out.print(curTime);
-		System.out.print(" is: ");
-		System.out.print(RegDHandler.getRegDSignal(curTime));
-		System.out.print("/n");
+		System.out.print((elapsedTime-1) / 1000);
+		System.out.print(" seconds is: ");
+		System.out.print(RegDHandler.getRegDSignal(elapsedTime));
+		System.out.print("\n");
+		checkRegDTime += 5000;
 	    }
- 
+	    
             Event currentEvent = this.eventQueue.nextEvent();
             this.currentTime = currentEvent.getTime();
             currentEvent.process();

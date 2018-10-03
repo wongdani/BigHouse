@@ -139,7 +139,7 @@ public class Server implements Powerable, Serializable {
      * A lookup table for power consumption given a utilization of 0-1; used 
      * in getDynamicPower()
      */
-     private HashMap<Double, Double> powerConsumptionTable; 
+     private static HashMap<Double, Double> powerConsumptionTable = new HashMap(50); 
 
     /**
      * Creates a new server.

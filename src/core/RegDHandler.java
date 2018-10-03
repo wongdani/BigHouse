@@ -53,10 +53,10 @@ public class RegDHandler {
 			}
 		}
 	
-		System.out.println("File read complete, printing values:");
-		for(int i = 0; i < timeStamps.size(); ++i) {
+		//System.out.println("File read complete, printing values:");
+		/*for(int i = 0; i < timeStamps.size(); ++i) {
 			System.out.println(timeStamps.get(i) + ", " + regValues.get(i));
-		}
+		}*/
 		System.out.println("End of values");
 	} catch (IOException e) {
 		e.printStackTrace();
@@ -82,11 +82,11 @@ public class RegDHandler {
 	long maxTime = timeStamps.get(timeStamps.size() - 1);
 	long currentTime = 0;
 	int index = 0;
-	diff = 1000 * diff; // convert difference from sec to ms
 
 	while(!done) {
 		if( (currentTime + (3*diff)) > maxTime) {
 			System.out.println("Error: Unable to fetch accurate regualtion signal; maxTime exceeded!");
+			System.out.println("maxTime is: " + maxTime + "\ndiff is: " + diff);
 			System.exit(1);
 		}
 		if(currentTime > time) {
