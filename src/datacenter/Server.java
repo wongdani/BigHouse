@@ -139,7 +139,7 @@ public class Server implements Powerable, Serializable {
      * A lookup table for power consumption given a utilization of 0-1; used 
      * in getDynamicPower()
      */
-     private static HashMap<Double, Double> powerConsumptionTable = new HashMap(50); 
+     private static HashMap<Double, Double> powerConsumptionTable = new HashMap(); 
 
     /**
      * Creates a new server.
@@ -610,8 +610,14 @@ public class Server implements Powerable, Serializable {
 		double arrOfLimits[] = getLimits(util);
 		double top = arrOfLimits[0];
 		double bottom = arrOfLimits[1];
-		double ratio = (util - bottom) / (top - bottom);
-		return (top + bottom) * ratio;
+
+		// find slope of line
+		double y2 = powerConsumptionTable.get(top); // y2 stores powerCons of top util 
+		double y1 = powerConsumptionTable.get(bottom); // y1 stores powerCons of bottom util
+		double x2 = top;
+		double x1 = bottom;
+		double slope = (y2 - y1) / (x2 - x1);
+		return slope * (util - x1) + y1;
 	}
     }
 
