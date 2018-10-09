@@ -84,7 +84,7 @@ public class RegDHandler {
 	int index = 0;
 
 	while(!done) {
-		if( (currentTime > maxTime + (3*diff)) {
+		if( (currentTime > maxTime + (3*diff)) ) {
 			System.out.println("Error: Unable to fetch accurate regualtion signal; maxTime exceeded!");
 			System.out.println("maxTime is: " + maxTime + "\ndiff is: " + diff);
 			System.exit(1);
