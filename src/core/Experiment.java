@@ -43,6 +43,7 @@ import stat.StatisticsCollection;
 import datacenter.DataCenter;
 import datacenter.DataCenter.ClusterScheduler;
 import datacenter.Server;
+import core.RegDHandler;
 
 /**
  * This class contains all components of an experiment.
@@ -156,6 +157,9 @@ public final class Experiment implements Serializable, Cloneable {
      * This entails priming every server with an initial arrival event.
      */
     public void initialize() {
+	// get regulation signals from file and populate arrays
+	RegDHandler.getRegDFromFile("reg-d.csv"); 
+	
         this.dataCenter = this.experimentInput.getDataCenter();
         Vector<Server> servers = dataCenter.getServers();
         // Make sure all the arrival processes have begun
@@ -218,6 +222,9 @@ public final class Experiment implements Serializable, Cloneable {
     public void run() {
         this.initialize();
         long startTime = System.currentTimeMillis();
+	long checkRegDTime = 5000; // start at 5 seconds 
+	long curTime= 0;
+	long elapsedTime = 0;
 
         this.nEventsProccessed = 0;
         //Sim.printBanner();
@@ -226,6 +233,17 @@ public final class Experiment implements Serializable, Cloneable {
         //int orderOfMag = 5;
         long printSamples = 100000;//(long) Math.pow(10, orderOfMag);
         while (!stop) {
+	    curTime = System.currentTimeMillis();
+	    elapsedTime = curTime - startTime;
+	    if(elapsedTime > checkRegDTime) {
+		System.out.print("Regulation-D signal at ");
+		System.out.print((elapsedTime-1) / 1000);
+		System.out.print(" seconds is: ");
+		System.out.print(RegDHandler.getRegDSignal(elapsedTime));
+		System.out.print("\n");
+		checkRegDTime += 5000;
+	    }
+	    
             Event currentEvent = this.eventQueue.nextEvent();
             this.currentTime = currentEvent.getTime();
             currentEvent.process();

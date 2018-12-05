@@ -33,6 +33,7 @@
  * This package is only used during development
  * It's not a part of final SQS 
  */
+
 package experiment;
 
 //TODO delete this
@@ -51,6 +52,11 @@ import datacenter.Server;
 import datacenter.Core.CorePowerPolicy;
 import datacenter.Socket.SocketPowerPolicy;
 
+import java.io.*;
+import java.util.*;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.lang.Long;
 public class SingleMachine {
 
 	public SingleMachine(){
@@ -151,10 +157,54 @@ public class SingleMachine {
 		System.out.println("Average Utilization: " + averageUtilization);
 
 	}//End run()
-	
+/*
+	public static void getCSV(String fileName) {
+		String line = "";
+		String csvSplitChar = ",";
+		BufferedReader bufReader = null;
+		
+		String timeInSec = "";
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		ArrayList<Long> timeStamps = new ArrayList<Long>();
+		ArrayList<Double> regValues = new ArrayList<Double>();
+
+		try {
+			bufReader = new BufferedReader(new FileReader("workloads/" + fileName));
+			while( (line = bufReader.readLine()) != null) {
+				String[] getLine = line.split(csvSplitChar);
+				if(getLine[1].equals("RegDTest")) { //FIXME: prone to errors if file doesnt start with "RegDTest"
+					continue; // ignore this line
+				}
+				else {
+					//getLine[0] is in sec
+					timeInSec = getLine[0];	
+					date = sdf.parse("1970-01-01 " + timeInSec);
+					
+					timeStamps.add(date.getTime() - 28800000); // subtract for timezone diff
+					regValues.add(Double.parseDouble(getLine[1]) );
+				}
+			}
+		
+			System.out.println("File read complete, printing values:");
+			for(int i = 0; i < timeStamps.size(); ++i) {
+				System.out.println(timeStamps.get(i) + ", " + regValues.get(i));
+			}
+			System.out.println("End of values");
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			System.out.println("Problem reading date\n");
+		}
+	}*/
 	public static void main(String[] args) {
 		SingleMachine exp  = new SingleMachine();
+
 		exp.run(args[0],args[1],Double.valueOf(args[2]));
+
+		//exp.getCSV("reg-d.csv");
+
 	}
 	
 }
